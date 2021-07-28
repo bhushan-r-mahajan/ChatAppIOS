@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>404259057979-et2ndb58n0dp2j3rc7k7t85cro91s7k4.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.404259057979-et2ndb58n0dp2j3rc7k7t85cro91s7k4</string>
+	<key>API_KEY</key>
+	<string>AIzaSyC-CDoswcK4YScA7-WZjbUIlk13XrWLmGs</string>
+	<key>GCM_SENDER_ID</key>
+	<string>404259057979</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>Bhushan.ChatApp</string>
+	<key>PROJECT_ID</key>
+	<string>chatapp-e96b1</string>
+	<key>STORAGE_BUCKET</key>
+	<string>chatapp-e96b1.appspot.com</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:404259057979:ios:69e562a2241ad66d54871e</string>
+</dict>
+</plist>
