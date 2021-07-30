@@ -23,6 +23,7 @@ class ChatController: UICollectionViewController, UICollectionViewDelegateFlowLa
     }()
     
     var messages = [Message]()
+    var user: Users?
     
     //MARK: - Init
     
@@ -34,9 +35,7 @@ class ChatController: UICollectionViewController, UICollectionViewDelegateFlowLa
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        DispatchQueue.main.async {
-            self.collectionView.reloadData()
-        }
+        collectionView.reloadData()
     }
     
     //MARK: - Configure Funtions
@@ -69,6 +68,7 @@ class ChatController: UICollectionViewController, UICollectionViewDelegateFlowLa
     private func observeUserMessages() {
         FirebaseManager.shared.observeUserMessages() { [weak self] userMessages in
             self?.messages = userMessages
+            print(userMessages.count)
             DispatchQueue.main.async {
                 self?.collectionView.reloadData()
             }

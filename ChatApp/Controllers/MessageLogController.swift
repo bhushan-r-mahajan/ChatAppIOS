@@ -7,6 +7,8 @@
 
 import UIKit
 import FirebaseAuth
+import MobileCoreServices
+import AVFoundation
 
 class MessageLogController: UITableViewController, UITextFieldDelegate {
     
@@ -70,7 +72,6 @@ class MessageLogController: UITableViewController, UITextFieldDelegate {
     }
     
     var inputContainerBottomAnchor: NSLayoutConstraint?
-    let cellID = "cell"
     var messages = [Message]()
     
     // MARK: - Init
@@ -101,10 +102,6 @@ class MessageLogController: UITableViewController, UITextFieldDelegate {
         NotificationCenter.default.removeObserver(self)
     }
     
-    deinit {
-        print("*****************deinit called******************")
-    }
-    
     // MARK: - Table view functions
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -112,14 +109,22 @@ class MessageLogController: UITableViewController, UITextFieldDelegate {
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: cellID, for: indexPath) as! ChatMessageCell
         let message = messages[indexPath.row]
-        cell.setupMessageCell(cell: cell, message: message)
-        return cell
+        if message.text != nil {
+            let cell = tableView.dequeueReusableCell(withIdentifier: ChatMessageCell.reuseIdentifier, for: indexPath) as! ChatMessageCell
+            cell.message = message
+            return cell
+        } else if message.imageURL != nil {
+            let cell = tableView.dequeueReusableCell(withIdentifier: ChatImageCell.reuseIdentifier, for: indexPath) as! ChatImageCell
+            cell.message = message
+            return cell
+        }
+        return UITableViewCell()
     }
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
+        
     }
     
     // MARK: - Configure Functions
@@ -128,7 +133,8 @@ class MessageLogController: UITableViewController, UITextFieldDelegate {
         tableView.backgroundColor = #colorLiteral(red: 0.2, green: 0.2, blue: 0.2, alpha: 1)
         tableView.separatorStyle = .none
         tableView.keyboardDismissMode = .interactive
-        tableView.register(ChatMessageCell.self, forCellReuseIdentifier: cellID)
+        tableView.register(ChatMessageCell.self, forCellReuseIdentifier: ChatMessageCell.reuseIdentifier)
+        tableView.register(ChatImageCell.self, forCellReuseIdentifier: ChatImageCell.reuseIdentifier)
         
         navigationController?.navigationBar.barStyle = .black
         navigationItem.largeTitleDisplayMode = .never
@@ -154,7 +160,7 @@ class MessageLogController: UITableViewController, UITextFieldDelegate {
     
     @objc func observeKeyboard() {
         let count = messages.count
-        if count > 0 {
+        if count > 2 {
             let indexPath = IndexPath(row: count - 1, section: 0)
             self.tableView.scrollToRow(at: indexPath, at: .top, animated: true)
         }
@@ -177,9 +183,11 @@ class MessageLogController: UITableViewController, UITextFieldDelegate {
     
     @objc func sendImageButtonTpped() {
         let vc = UIImagePickerController()
+        //vc.sourceType = .photoLibrary
         vc.sourceType = .photoLibrary
         vc.delegate = self
         vc.allowsEditing = true
+        vc.mediaTypes = [kUTTypeImage as String, kUTTypeMovie as String]
         present(vc, animated: true)
     }
     
@@ -193,18 +201,47 @@ class MessageLogController: UITableViewController, UITextFieldDelegate {
         handleSendingOfMessage()
         return true
     }
+    
+    func thumbnailImageForFile(fileURL: NSURL) -> UIImage? {
+        let assest = AVAsset(url: fileURL as URL)
+        let imageGenerator = AVAssetImageGenerator(asset: assest)
+        do {
+            let cgImage = try imageGenerator.copyCGImage(at: CMTimeMake(value: 1, timescale: 60), actualTime: nil)
+            return UIImage(cgImage: cgImage)
+        } catch let error{
+            print(error)
+        }
+        return nil
+    }
 }
 
 extension MessageLogController: UIImagePickerControllerDelegate, UINavigationControllerDelegate {
     
     func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
-        guard let image = info[UIImagePickerController.InfoKey(rawValue: "UIImagePickerControllerEditedImage")] as? UIImage else { return }
+        
         guard let uid = user!.id else { return }
         guard let currentUserUid = FirebaseAuth.Auth.auth().currentUser?.uid else { return }
         guard let timestamp = NSDate().timeIntervalSince1970 as? Double else { return }
-        FirebaseManager.shared.sendImagesInChat(image: image, recieverId: uid, senderId: currentUserUid, timestamp: timestamp) { success in
-            if success {
-                print("Image message sent!!")
+        
+        if let video = info[UIImagePickerController.InfoKey(rawValue: "UIImagePickerControllerMediaURL")] as? NSURL {
+            let videoURL = video.filePathURL as NSURL?
+            guard let thumbnailImage = self.thumbnailImageForFile(fileURL: videoURL!) else { return }
+            FirebaseManager.shared.getThumbnailImageURl(image: thumbnailImage) { url in
+                let imageURl = url
+                FirebaseManager.shared.sendVideosInChat(videoURL: videoURL! as URL, imageURL: imageURl, recieverId: uid, senderId: currentUserUid, timestamp: timestamp) { success in
+                    if success {
+                        print("Video message sent!!")
+                    }
+                }
+            }
+          
+        } else {
+            if let image = info[UIImagePickerController.InfoKey(rawValue: "UIImagePickerControllerEditedImage")] as? UIImage {
+                FirebaseManager.shared.sendImagesInChat(image: image, recieverId: uid, senderId: currentUserUid, timestamp: timestamp) { success in
+                    if success {
+                        print("Image message sent!!")
+                    }
+                }
             }
         }
         picker.dismiss(animated: true, completion: nil)

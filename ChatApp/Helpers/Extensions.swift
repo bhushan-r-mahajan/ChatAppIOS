@@ -130,70 +130,6 @@ extension UIView {
     }
 }
 
-
-
-//extension UIImageView {
-//
-//    func loadImageUsingCache(from imgURL: String) -> URLSessionDataTask? {
-//        guard let url = URL(string: imgURL) else { return nil }
-//
-//        // set initial image to nil so it doesn't use the image from a reused cell
-//        image = nil
-//
-//        // check if the image is already in the cache
-//        if let imageToCache = imageCache.object(forKey: imgURL as NSString) {
-//            self.image = imageToCache
-//            return nil
-//        }
-//
-//        // download the image asynchronously
-//        let task = URLSession.shared.dataTask(with: url) { (data, response, error) in
-//            if let err = error {
-//                print(err)
-//                return
-//            }
-//
-//            DispatchQueue.main.async {
-//                // create UIImage
-//                let imageToCache = UIImage(data: data!)
-//                // add image to cache
-//                imageCache.setObject(imageToCache!, forKey: imgURL as NSString)
-//                self.image = imageToCache
-//            }
-//        }
-//        task.resume()
-//        return task
-//    }
-//}
-
-let imageCache = NSCache<NSString, UIImage>()
-//let imageCache = NSCache<AnyObject, AnyObject>()
-
-extension UIImageView {
-    
-    func loadImageUsingCache(from urlString: String) {
-        
-        image = nil
-        if let cachedImage = imageCache.object(forKey: urlString as NSString) {
-            image = cachedImage
-            return
-        }
-        let profilePhotoURL = NSURL(string: urlString)
-        URLSession.shared.dataTask(with: profilePhotoURL! as URL) { data, response, error in
-            guard error == nil else {
-                print("Error while downloading Image!!!")
-                return
-            }
-            DispatchQueue.main.async {
-                if let downloadedImage = UIImage(data: data!) {
-                    imageCache.setObject(downloadedImage, forKey: urlString as NSString)
-                    self.image = downloadedImage
-                }
-            }
-        }.resume()
-    }
-}
-
 extension UITextField {
     
     enum PaddingSide {
@@ -231,3 +167,63 @@ extension UITextField {
         }
     }
 }
+
+
+
+
+
+//extension UIImageView {
+//
+//    func loadImageUsingCache(from imgURL: String) -> URLSessionDataTask? {
+//        guard let url = URL(string: imgURL) else { return nil }
+//
+//        // set initial image to nil so it doesn't use the image from a reused cell
+//        image = nil
+//
+//        // check if the image is already in the cache
+//        if let imageToCache = imageCache.object(forKey: imgURL as NSString) {
+//            self.image = imageToCache
+//            return nil
+//        }
+//
+//        // download the image asynchronously
+//        let task = URLSession.shared.dataTask(with: url) { (data, response, error) in
+//            if let err = error {
+//                print(err)
+//                return
+//            }
+//
+//            DispatchQueue.main.async {
+//                // create UIImage
+//                let imageToCache = UIImage(data: data!)
+//                // add image to cache
+//                imageCache.setObject(imageToCache!, forKey: imgURL as NSString)
+//                self.image = imageToCache
+//            }
+//        }
+//        task.resume()
+//        return task
+//    }
+//}
+
+//let imageCache = NSCache<NSString, UIImage>()
+//
+//struct DownloadImage {
+//
+//    static func loadImageUsingCache(from urlString: String, completion: @escaping (UIImage) -> Void ) {
+//        let profilePhotoURL = NSURL(string: urlString)
+//        URLSession.shared.dataTask(with: profilePhotoURL! as URL) { data, response, error in
+//            guard error == nil else {
+//                print("Error while downloading Image!!!")
+//                return
+//            }
+//            DispatchQueue.main.async {
+//                if let downloadedImage = UIImage(data: data!) {
+//                    imageCache.setObject(downloadedImage, forKey: urlString as NSString)
+//                    completion(downloadedImage)
+//                }
+//            }
+//        }.resume()
+//    }
+//}
+

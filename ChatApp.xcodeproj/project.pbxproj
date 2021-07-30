@@ -27,6 +27,7 @@
 		D4512D4C26AD890700DA5A26 /* MessageLogController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4512D4B26AD890700DA5A26 /* MessageLogController.swift */; };
 		D4512D4E26ADBCA700DA5A26 /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4512D4D26ADBCA700DA5A26 /* Message.swift */; };
 		D46B315126AE929E0081F3E9 /* ChatMessageCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = D46B315026AE929E0081F3E9 /* ChatMessageCell.swift */; };
+		D4CBE0A126B3C8BF00D3A53E /* ChatImageCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4CBE0A026B3C8BF00D3A53E /* ChatImageCell.swift */; };
 		D4F2451526ACA39600FE5722 /* FirebaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4F2451426ACA39600FE5722 /* FirebaseManager.swift */; };
 		D4F2451726ACA5CA00FE5722 /* Users.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4F2451626ACA5CA00FE5722 /* Users.swift */; };
 /* End PBXBuildFile section */
@@ -56,6 +57,7 @@
 		D4512D4B26AD890700DA5A26 /* MessageLogController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageLogController.swift; sourceTree = "<group>"; };
 		D4512D4D26ADBCA700DA5A26 /* Message.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Message.swift; sourceTree = "<group>"; };
 		D46B315026AE929E0081F3E9 /* ChatMessageCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatMessageCell.swift; sourceTree = "<group>"; };
+		D4CBE0A026B3C8BF00D3A53E /* ChatImageCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatImageCell.swift; sourceTree = "<group>"; };
 		D4F2451426ACA39600FE5722 /* FirebaseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirebaseManager.swift; sourceTree = "<group>"; };
 		D4F2451626ACA5CA00FE5722 /* Users.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Users.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -163,6 +165,7 @@
 				D43AA01026AC9E1100D2A4A6 /* ChatCell.swift */,
 				D4512D4926AD48D000DA5A26 /* UserCell.swift */,
 				D46B315026AE929E0081F3E9 /* ChatMessageCell.swift */,
+				D4CBE0A026B3C8BF00D3A53E /* ChatImageCell.swift */,
 			);
 			path = View;
 			sourceTree = "<group>";
@@ -314,6 +317,7 @@
 				D43AA00B26AC9B5000D2A4A6 /* LoginController.swift in Sources */,
 				D43A9FEB26AC95D900D2A4A6 /* SceneDelegate.swift in Sources */,
 				D4512D4E26ADBCA700DA5A26 /* Message.swift in Sources */,
+				D4CBE0A126B3C8BF00D3A53E /* ChatImageCell.swift in Sources */,
 				D43AA00926AC9B0B00D2A4A6 /* Extensions.swift in Sources */,
 				D43AA01526AC9F0A00D2A4A6 /* NewConversationController.swift in Sources */,
 			);

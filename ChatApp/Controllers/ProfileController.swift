@@ -106,7 +106,8 @@ class ProfileController: UIViewController {
                 self.nameField.text = profile["name"] as? String
                 self.emailField.text = profile["email"] as? String
                 guard let urlString = profile["profilePhotoURL"] as? String else { return }
-                self.profileImage.loadImageUsingCache(from: urlString)
+                let URL = NSURL(string: urlString)
+                self.profileImage.sd_setImage(with: URL as URL?, completed: nil)
             case .failure(let error):
                 print("Failed to fetch User from Database!! \(error)")
             }

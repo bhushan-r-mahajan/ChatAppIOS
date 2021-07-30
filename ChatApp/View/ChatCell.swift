@@ -43,7 +43,8 @@ class ChatCell: UICollectionViewCell {
         label.textColor = .white
         return label
     }()
-
+    
+    
     // MARK: - Init
     
     weak var message: Message? {
@@ -52,7 +53,8 @@ class ChatCell: UICollectionViewCell {
                 FirebaseManager.shared.fetchPerticularUser(id: id) { dictionary in
                     self.nameLabelField.text = dictionary["name"] as? String
                     guard let profileImageUrl = dictionary["profilePhotoURL"] as? String else { return }
-                    self.profileImageView.loadImageUsingCache(from: profileImageUrl)
+                    let URL = NSURL(string: profileImageUrl)
+                    self.profileImageView.sd_setImage(with: URL as URL?, completed: nil)
                 }
                 messageLabelField.text = message?.text
             }

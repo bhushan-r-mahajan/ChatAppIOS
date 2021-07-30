@@ -52,7 +52,8 @@ class UserCell: UITableViewCell {
             textLabel?.text = user?.name
             detailTextLabel?.text = user?.email
             if let profileURL = user?.profileImageURL {
-                profileImageView.loadImageUsingCache(from: profileURL)
+                let URL = NSURL(string: profileURL)
+                profileImageView.sd_setImage(with: URL as URL?, completed: nil)
             }
         }
     }

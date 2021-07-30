@@ -13,7 +13,6 @@ class NewConversationController: UIViewController {
     // MARK: - Properties
     
     let cellID = "cell"
-    
     weak var chatController: ChatController?
     
     lazy var tableView: UITableView = {
@@ -46,10 +45,6 @@ class NewConversationController: UIViewController {
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         tableView.frame = view.bounds
-    }
-    
-    deinit {
-        print("*****************deinit called******************")
     }
     
     // MARK: - Configure Functions
@@ -91,8 +86,6 @@ class NewConversationController: UIViewController {
         dismiss(animated: true, completion: nil)
     }
 }
-
-
 
 // MARK: - TableviewDelegate & Functions
 
