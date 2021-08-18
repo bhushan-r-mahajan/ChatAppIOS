@@ -13,23 +13,20 @@ class Message: NSObject {
     var recieverId: String?
     var senderId: String?
     var text: String?
-    var timestamp: Double?
+    var timestamp: String?
     var imageURL: String?
-    var imageHeight: NSNumber?
-    var imageWidth: NSNumber?
+    var message: String?
     
     func checkId() -> String? {
         return senderId == FirebaseAuth.Auth.auth().currentUser?.uid ? recieverId : senderId
     }
     
-//    init(dictionary: [String: Any]) {
-//        super.init()
-//        recieverId = dictionary["recieverId"] as? String
-//        senderId = dictionary["recieverId"] as? String
-//        text = dictionary["recieverId"] as? String
-//        timestamp = dictionary["recieverId"] as? Double
-//        imageURL = dictionary["recieverId"] as? String
-//        imageHeight = dictionary["recieverId"] as? NSNumber
-//        imageWidth = dictionary["recieverId"] as? NSNumber
-//    }
+    init(dictionary: [String: Any]) {
+        recieverId = dictionary[StringConstants.recieverId] as? String
+        senderId = dictionary[StringConstants.senderId] as? String
+        text = dictionary[StringConstants.text] as? String
+        timestamp = dictionary[StringConstants.timestamp] as? String
+        imageURL = dictionary[StringConstants.imageURL] as? String
+        message = dictionary["message"] as? String
+    }
 }

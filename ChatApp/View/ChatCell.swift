@@ -27,6 +27,7 @@ class ChatCell: UICollectionViewCell {
         let label = UILabel()
         label.textColor = .white
         label.font = UIFont.systemFont(ofSize: 14, weight: .medium)
+        label.numberOfLines = 0
         return label
     }()
     
@@ -45,19 +46,11 @@ class ChatCell: UICollectionViewCell {
     }()
     
     
-    // MARK: - Init
+    // MARK: - Init\
     
-    weak var message: Message? {
+    var chat: Chats? {
         didSet {
-            if let id = message?.checkId() {
-                FirebaseManager.shared.fetchPerticularUser(id: id) { dictionary in
-                    self.nameLabelField.text = dictionary["name"] as? String
-                    guard let profileImageUrl = dictionary["profilePhotoURL"] as? String else { return }
-                    let URL = NSURL(string: profileImageUrl)
-                    self.profileImageView.sd_setImage(with: URL as URL?, completed: nil)
-                }
-                messageLabelField.text = message?.text
-            }
+            configure()
         }
     }
     
@@ -86,10 +79,25 @@ class ChatCell: UICollectionViewCell {
         nameLabelField.anchor(top: topAnchor, paddingTop: 10, left: profileImageView.rightAnchor, paddingLeft: 20, height: 24)
         
         addSubview(timeLabel)
-        timeLabel.anchor(top: topAnchor, paddingTop: 10, right: rightAnchor, width: 100, height: 24)
+        timeLabel.anchor(top: topAnchor, paddingTop: 10, right: rightAnchor, width: 120, height: 24)
         
         addSubview(messageLabelField)
         messageLabelField.anchor(top: nameLabelField.bottomAnchor, paddingTop: 10 , left: profileImageView.rightAnchor, paddingLeft: 20, right: rightAnchor, height: 24)
+    }
+    
+    func configure() {
+        guard let chat = chat else { return }
+        nameLabelField.text = chat.user.name
+        if chat.message.message == nil {
+            messageLabelField.text = chat.message.text
+
+        } else {
+            messageLabelField.text = chat.message.message
+        }
+        timeLabel.text = chat.message.timestamp
+        guard let url = chat.user.profilePhotoURL else { return }
+        let URL = URL(string: url)
+        profileImageView.sd_setImage(with: URL, completed: nil)
     }
 }
 

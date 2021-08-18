@@ -11,19 +11,19 @@ class TabBarController: UITabBarController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
-        tabBar.barTintColor = .black
+        tabBar.backgroundColor = #colorLiteral(red: 0.2, green: 0.2, blue: 0.2, alpha: 1)
+        tabBar.barTintColor = #colorLiteral(red: 0.2, green: 0.2, blue: 0.2, alpha: 1)
         configureTabBar()
     }
     
     func configureTabBar() {
         let layout = UICollectionViewFlowLayout()
         
-        let chatController = getNavigationController(vc: ChatController(collectionViewLayout: layout), selectedImage: (UIImage(systemName: "bubble.left.fill", withConfiguration: UIImage.SymbolConfiguration(weight: .bold))?.withTintColor(.white, renderingMode: .alwaysOriginal))!, unSelectedImage: (UIImage(systemName: "bubble.left.fill", withConfiguration: UIImage.SymbolConfiguration(weight: .bold))?.withTintColor(.darkGray, renderingMode: .alwaysOriginal))!)
+        let chatController = getNavigationController(vc: ChatController(collectionViewLayout: layout), selectedImage: (UIImage(systemName: "bubble.left.fill", withConfiguration: UIImage.SymbolConfiguration(weight: .bold))?.withTintColor(.white, renderingMode: .alwaysOriginal))!, unSelectedImage: (UIImage(systemName: "bubble.left.fill", withConfiguration: UIImage.SymbolConfiguration(weight: .bold))?.withTintColor(.lightGray, renderingMode: .alwaysOriginal))!)
         
-        let statusController = getNavigationController(vc: StatusController(), selectedImage: (UIImage(systemName: "circle.dashed", withConfiguration: UIImage.SymbolConfiguration(weight: .bold))?.withTintColor(.white, renderingMode: .alwaysOriginal))!, unSelectedImage: (UIImage(systemName: "circle.dashed", withConfiguration: UIImage.SymbolConfiguration(weight: .bold))?.withTintColor(.darkGray, renderingMode: .alwaysOriginal))!)
+        let statusController = getNavigationController(vc: StatusController(), selectedImage: (UIImage(systemName: "circle.dashed", withConfiguration: UIImage.SymbolConfiguration(weight: .bold))?.withTintColor(.white, renderingMode: .alwaysOriginal))!, unSelectedImage: (UIImage(systemName: "circle.dashed", withConfiguration: UIImage.SymbolConfiguration(weight: .bold))?.withTintColor(.lightGray, renderingMode: .alwaysOriginal))!)
         
-        let profileController = getNavigationController(vc: ProfileController(), selectedImage: (UIImage(systemName: "gear", withConfiguration: UIImage.SymbolConfiguration(weight: .bold))?.withTintColor(.white, renderingMode: .alwaysOriginal))!, unSelectedImage: (UIImage(systemName: "gear", withConfiguration: UIImage.SymbolConfiguration(weight: .bold))?.withTintColor(.darkGray, renderingMode: .alwaysOriginal))!)
+        let profileController = getNavigationController(vc: ProfileController(), selectedImage: (UIImage(systemName: "gear", withConfiguration: UIImage.SymbolConfiguration(weight: .bold))?.withTintColor(.white, renderingMode: .alwaysOriginal))!, unSelectedImage: (UIImage(systemName: "gear", withConfiguration: UIImage.SymbolConfiguration(weight: .bold))?.withTintColor(.lightGray, renderingMode: .alwaysOriginal))!)
         
         viewControllers = [chatController, statusController, profileController]
         

@@ -21,15 +21,6 @@ class NewConversationController: UIViewController {
         return table
     }()
     
-    private let noFriends: UILabel = {
-        let label = UILabel()
-        label.textAlignment = .center
-        label.text = "No Friends"
-        label.font = UIFont.systemFont(ofSize: 20, weight: .bold)
-        label.isHidden = true
-        return label
-    }()
-    
     private let searchController = UISearchController()
     private var users = [Users]()
     
@@ -69,8 +60,6 @@ class NewConversationController: UIViewController {
         tableView.delegate = self
         tableView.dataSource = self
         view.addSubview(tableView)
-        view.addSubview(noFriends)
-        noFriends.center = view.center
     }
     
     private func fetchUsers() {
@@ -93,7 +82,6 @@ extension NewConversationController: UITableViewDelegate {
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-        print("Selected")
         dismiss(animated: false) {
             let user = self.users[indexPath.row]
             self.chatController?.showMessageControllerForUser(user: user)

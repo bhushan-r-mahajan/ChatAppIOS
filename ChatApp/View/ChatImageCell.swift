@@ -15,6 +15,8 @@ class ChatImageCell: UITableViewCell {
     
     static let reuseIdentifier = "cellID"
     
+    let tapGesture = UIView()
+    
     let messageImageView: UIImageView = {
         let iv = UIImageView()
         iv.layer.cornerRadius = 10
@@ -22,13 +24,13 @@ class ChatImageCell: UITableViewCell {
         iv.backgroundColor = .clear
         iv.translatesAutoresizingMaskIntoConstraints = false
         iv.contentMode = .scaleAspectFit
-        iv.isUserInteractionEnabled = true
-        iv.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(zoomInImageWhenTapped)))
         return iv
     }()
     
     var messageImageViewRightAnchor: NSLayoutConstraint!
     var messageImageViewLeftAnchor: NSLayoutConstraint!
+    var tapGestureViewRightAnchor: NSLayoutConstraint!
+    var tapGestureViewLeftAnchor: NSLayoutConstraint!
     
     var message: Message? {
         didSet {
@@ -44,7 +46,7 @@ class ChatImageCell: UITableViewCell {
     
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
-        isUserInteractionEnabled = false
+        isUserInteractionEnabled = true
         backgroundColor = .clear
         configureComponents()
     }
@@ -60,6 +62,24 @@ class ChatImageCell: UITableViewCell {
         messageImageViewLeftAnchor.isActive = false
         messageImageViewRightAnchor = messageImageView.rightAnchor.constraint(equalTo: rightAnchor, constant: -16)
         messageImageViewRightAnchor.isActive = false
+        
+        addSubview(tapGesture)
+        configureTapGesture()
+        tapGesture.anchor(top: topAnchor, paddingTop: 16, bottom: bottomAnchor, paddingBottom: 16)
+        tapGesture.widthAnchor.constraint(lessThanOrEqualToConstant: 200).isActive = true
+        tapGesture.heightAnchor.constraint(equalToConstant: 150).isActive = true
+        tapGestureViewLeftAnchor = tapGesture.leftAnchor.constraint(equalTo: leftAnchor, constant: 16)
+        tapGestureViewLeftAnchor.isActive = false
+        tapGestureViewRightAnchor = tapGesture.rightAnchor.constraint(equalTo: rightAnchor, constant: -16)
+        tapGestureViewRightAnchor.isActive = false
+        tapGesture.isUserInteractionEnabled = true
+    }
+    
+    func configureTapGesture() {
+        let gestureRecogniser = UITapGestureRecognizer(target: self, action: #selector(zoomInImageWhenTapped))
+        gestureRecogniser.numberOfTapsRequired = 1
+        gestureRecogniser.numberOfTouchesRequired = 1
+        tapGesture.addGestureRecognizer(gestureRecogniser)
     }
     
     func setupMessageCell() {
@@ -70,16 +90,21 @@ class ChatImageCell: UITableViewCell {
         
         if message.senderId == FirebaseAuth.Auth.auth().currentUser?.uid {
             messageImageViewLeftAnchor.isActive = false
+            tapGestureViewLeftAnchor.isActive = false
             messageImageViewRightAnchor.isActive = true
+            tapGestureViewRightAnchor.isActive = true
+            
         } else {
             messageImageViewRightAnchor.isActive = false
+            tapGestureViewRightAnchor.isActive = false
             messageImageViewLeftAnchor.isActive = true
+            tapGestureViewLeftAnchor.isActive = true
         }
     }
     
     //MARK: - Objc Functions
     
-    @objc func zoomInImageWhenTapped(tapgesture: UITapGestureRecognizer) {
+    @objc func zoomInImageWhenTapped() {
         print("Image tapped")
     }
 }

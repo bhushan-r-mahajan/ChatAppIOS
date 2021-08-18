@@ -52,7 +52,7 @@ class ChatMessageCell: UITableViewCell {
     func configureComponents() {
         addSubview(bubbleView)
         bubbleView.anchor(top: topAnchor, paddingTop: 10, bottom: bottomAnchor, paddingBottom: 10)
-        bubbleView.widthAnchor.constraint(lessThanOrEqualToConstant: 200).isActive = true
+        bubbleView.widthAnchor.constraint(lessThanOrEqualToConstant: 300).isActive = true
         
         bubbleViewLeftConstraint = bubbleView.leftAnchor.constraint(equalTo: leftAnchor, constant: 10)
         bubbleViewLeftConstraint.isActive = false

@@ -20,35 +20,32 @@ class FirebaseManager {
         case FailedToFetchUser
         case FailedToDownloadUrl
         case FailedToUploadImage
+        case FailedToSendMessage
+        case ErrorGettingImageData
+        case ErrorDownloadingImageURL
+        case ErrorUploadingImageURL
+        case ErrorUploadingVideo
+        case ErrorDownloadingVideoURL
     }
     
     //MARK: - Fetch Functions
     
-    func fetchCurrentUser(with uid: String, completion: @escaping (Result<[String: Any], Error>) -> Void) {
-        database.child("users").child(uid).observeSingleEvent(of: .value) { snapShot in
-            if let dictionary = snapShot.value as? [String: Any] {
-                completion(.success(dictionary))
-            }
-        }
-    }
-    
     func fetchAllUsers(completed: @escaping ([Users]) -> ()) {
+        guard let uid = FirebaseAuth.Auth.auth().currentUser?.uid else { return }
         var users = [Users]()
-        database.child("users").observe(.childAdded) { snapShot in
+        database.child(StringConstants.users).observe(.childAdded) { snapShot in
             if let dict = snapShot.value as? [String: Any] {
-                let user = Users()
-                user.name = dict["name"] as? String
-                user.email = dict["email"] as? String
-                user.profileImageURL = dict["profilePhotoURL"] as? String
-                user.id = dict["id"] as? String
-                users.append(user)
+                let user = Users(dictionary: dict)
+                if user.id != uid {
+                    users.append(user)
+                }
+                completed(users)
             }
-            completed(users)
         }
     }
     
     func fetchPerticularUser(id: String, completion: @escaping ([String: Any]) -> Void) {
-        database.child("users").child(id).observeSingleEvent(of: .value) { snapShot in
+        database.child(StringConstants.users).child(id).observeSingleEvent(of: .value) { snapShot in
             guard let dictionary = snapShot.value as? [String: Any] else {
                 return
             }
@@ -56,27 +53,29 @@ class FirebaseManager {
         }
     }
     
-    func fetchUsersFromLatestMessage(completed: @escaping ([String: Any]) -> ()) {
+    func fetchUsersFromLatestMessage(completed: @escaping ([Chats]) -> ()) {
+        var chats = [Chats]()
+        var messagesDictionary = [String: Chats]()
         guard let uid = FirebaseAuth.Auth.auth().currentUser?.uid else { return }
-        database.child("userMessages").child(uid).observe(.childAdded) { snapShot in
-            let id = snapShot.key
-            self.database.child("users").child(id).observe(.value) { snapShot in
-                if let dictionary = snapShot.value as? [String: Any] {
-                    completed(dictionary)
+        database.child(StringConstants.userMessages).child(uid).observe(.childAdded) { snapShot in
+            
+            self.fetchPerticularUser(id: snapShot.key) { userDictionary in
+                let user = Users(dictionary: userDictionary)
+                
+                self.database.child(StringConstants.userMessages).child(uid).child(snapShot.key).child(StringConstants.recent_Message).observe(.value) { snapshot in
+                    guard let id = snapshot.value as? String else { return }
+                    self.database.child(StringConstants.messages).child(id).observe(.value) { dataSnapShot in
+                        if let dict =  dataSnapShot.value as? [String: Any] {
+                            let message = Message(dictionary: dict)
+                            let chat = Chats(user: user, message: message)
+                            if let chatPartnerID = message.checkId() {
+                                messagesDictionary[chatPartnerID] = chat
+                                chats = Array(messagesDictionary.values)
+                            }
+                            completed(chats)
+                        }
+                    }
                 }
-            }
-        }
-    }
-    
-    func fetchTimeStamp(recieverId: String, completion: @escaping (Double) -> Void) {
-        database.child("messages").child(recieverId).observeSingleEvent(of: .value) { snapShot in
-            if let dictionary = snapShot.value as? [String: Any] {
-                guard let timestamp = dictionary["timestamp"] as? Double else {
-                    print("Error fetching timestamp")
-                    return
-                }
-                print(timestamp)
-                completion(timestamp)
             }
         }
     }
@@ -94,7 +93,6 @@ class FirebaseManager {
                     completion(.failure(FirebaseError.FailedToDownloadUrl))
                     return
                 }
-                
                 let urlString = url.absoluteString
                 completion(.success(urlString))
             }
@@ -103,56 +101,59 @@ class FirebaseManager {
     
     //MARK: - Send Messages Function
     
-    func sendMessages(message: String, recieverId: String, senderId: String, timestamp: Double, completion: @escaping (Bool) -> Void) {
-        let values = ["text": message, "recieverId": recieverId, "senderId": senderId, "timestamp": timestamp] as [String : Any]
-        database.child("latestMessage").child(senderId).child(recieverId).setValue(values)
-        let ref = database.child("messages")
+    func sendMessages(recieverName: String, recieverProfilePhoto: String, message: String, recieverId: String, senderId: String, timestamp: String, completion: @escaping (Bool) -> Void) {
+        
+        let values = [StringConstants.text: message, StringConstants.recieverId: recieverId, StringConstants.senderId: senderId, StringConstants.timestamp: timestamp] as [String : Any]
+        let ref = database.child(StringConstants.messages)
         let childRef = ref.childByAutoId()
         childRef.updateChildValues(values) { [weak self] error, ref in
             guard error == nil else {
-                print("Failed to send Mesaage!!")
+                print(FirebaseError.FailedToSendMessage)
                 completion(false)
                 return
             }
             guard let messageId = childRef.key else { return }
-            self?.database.child("userMessages").child(senderId).child(recieverId).updateChildValues([messageId: "1"])
-            self?.database.child("userMessages").child(recieverId).child(senderId).updateChildValues([messageId: "1"])
+            self?.database.child(StringConstants.userMessages).child(senderId).child(recieverId).updateChildValues([messageId: "1"])
+            self?.database.child(StringConstants.userMessages).child(recieverId).child(senderId).updateChildValues([messageId: "1"])
+            
+            self?.database.child(StringConstants.userMessages).child(senderId).child(recieverId).child(StringConstants.recent_Message).setValue(messageId)
+            self?.database.child(StringConstants.userMessages).child(recieverId).child(senderId).child(StringConstants.recent_Message).setValue(messageId)
             completion(true)
         }
     }
     
     //MARK: - Send Images Function
     
-    func sendImagesInChat(image: UIImage, recieverId: String, senderId: String, timestamp: Double, completion: @escaping (Bool) -> Void) {
+    func sendImagesInChat(recieverName: String, recieverProfilePhoto: String, image: UIImage, recieverId: String, senderId: String, timestamp: String, completion: @escaping (Bool) -> Void) {
         let imageName = NSUUID().uuidString
         guard let imagedata = image.jpegData(compressionQuality: 0.2) else {
-            print("Error getting imageData!!")
+            print(FirebaseError.ErrorGettingImageData)
             return
         }
-        storage.child("messageImages").child(imageName).putData(imagedata, metadata: nil) { storageMetadata, error in
+        storage.child(StringConstants.messageImages).child(imageName).putData(imagedata, metadata: nil) { storageMetadata, error in
             guard error == nil else {
-                print("Error uploading image !!!")
+                print(FirebaseError.ErrorUploadingImageURL)
                 return
             }
-            self.storage.child("messageImages").child(imageName).downloadURL { url, error in
+            self.storage.child(StringConstants.messageImages).child(imageName).downloadURL { url, error in
                 guard let imageURL = url, error == nil else {
-                    print("Error downloading image url!!")
+                    print(FirebaseError.ErrorDownloadingImageURL)
                     return
                 }
-                print(imageURL)
-                let values = ["imageURL": imageURL.absoluteString, "recieverId": recieverId, "senderId": senderId, "timestamp": timestamp, "imageHeight": image.size.height, "imageWidth": image.size.width] as [String : Any]
-                self.database.child("latestMessage").child(senderId).child(recieverId).setValue(values)
-                let ref = self.database.child("messages")
+                let values = [StringConstants.imageURL: imageURL.absoluteString, StringConstants.recieverId: recieverId, StringConstants.senderId: senderId, StringConstants.timestamp: timestamp, "message": "Sent a Image."] as [String : Any]
+                let ref = self.database.child(StringConstants.messages)
                 let childRef = ref.childByAutoId()
                 childRef.updateChildValues(values) { [weak self] error, ref in
                     guard error == nil else {
-                        print("Failed to send Mesaage!!")
+                        print(FirebaseError.FailedToSendMessage)
                         completion(false)
                         return
                     }
                     guard let messageId = childRef.key else { return }
-                    self?.database.child("userMessages").child(senderId).child(recieverId).updateChildValues([messageId: "1"])
-                    self?.database.child("userMessages").child(recieverId).child(senderId).updateChildValues([messageId: "1"])
+                    self?.database.child(StringConstants.userMessages).child(senderId).child(recieverId).updateChildValues([messageId: "1"])
+                    self?.database.child(StringConstants.userMessages).child(recieverId).child(senderId).updateChildValues([messageId: "1"])
+                    self?.database.child(StringConstants.userMessages).child(senderId).child(recieverId).child(StringConstants.recent_Message).setValue(messageId)
+                    self?.database.child(StringConstants.userMessages).child(recieverId).child(senderId).child(StringConstants.recent_Message).setValue(messageId)
                     completion(true)
                 }
             }
@@ -164,17 +165,17 @@ class FirebaseManager {
     func getThumbnailImageURl(image: UIImage, completion: @escaping (_ imageURL: String) -> Void) {
         let imageName = NSUUID().uuidString
         guard let imagedata = image.jpegData(compressionQuality: 0.2) else {
-            print("Error getting imageData!!")
+            print(FirebaseError.ErrorGettingImageData)
             return
         }
-        storage.child("thumbnailImages").child(imageName).putData(imagedata, metadata: nil) { storageMetadata, error in
+        storage.child(StringConstants.thumbnailImages).child(imageName).putData(imagedata, metadata: nil) { storageMetadata, error in
             guard error == nil else {
-                print("Error uploading image !!!")
+                print(FirebaseError.ErrorDownloadingImageURL)
                 return
             }
-            self.storage.child("thumbnailImages").child(imageName).downloadURL { url, error in
+            self.storage.child(StringConstants.thumbnailImages).child(imageName).downloadURL { url, error in
                 guard let imageURL = url, error == nil else {
-                    print("Error downloading image url!!")
+                    print(FirebaseError.ErrorDownloadingImageURL)
                     return
                 }
                 print(imageURL.absoluteString)
@@ -183,93 +184,36 @@ class FirebaseManager {
         }
     }
     
-    func sendVideosInChat(videoURL: URL, imageURL: String, recieverId: String, senderId: String, timestamp: Double, completion: @escaping (Bool) -> Void) {
+    func sendVideosInChat(videoURL: URL, imageURL: String, recieverId: String, senderId: String, timestamp: String, completion: @escaping (Bool) -> Void) {
         let videoName = NSUUID().uuidString
-        storage.child("messageVideos").child(videoName).putFile(from: videoURL, metadata: nil) { storageMetadata, error in
+        storage.child(StringConstants.messageVideos).child(videoName).putFile(from: videoURL, metadata: nil) { storageMetadata, error in
             guard error == nil else {
-                print("Error uploading Video !!!")
+                print(FirebaseError.ErrorUploadingVideo)
                 return
             }
             print("Video saved to db successfully")
-            self.storage.child("messageVideos").child(videoName).downloadURL { url, error in
+            self.storage.child(StringConstants.messageVideos).child(videoName).downloadURL { url, error in
                 guard let videoDownloadURL = url, error == nil else {
-                    print("Error downloading Video url!!")
+                    print(FirebaseError.ErrorDownloadingVideoURL)
                     return
                 }
                 print(videoDownloadURL)
-                let values = ["videoURL": videoDownloadURL.absoluteString, "imageURL": imageURL, "recieverId": recieverId, "senderId": senderId, "timestamp": timestamp] as [String : Any]
-                self.database.child("latestMessage").child(senderId).child(recieverId).setValue(values)
-                let ref = self.database.child("messages")
+                
+                let values = [StringConstants.videoURL: videoDownloadURL.absoluteString, StringConstants.imageURL: imageURL, StringConstants.recieverId: recieverId, StringConstants.senderId: senderId, StringConstants.timestamp: timestamp] as [String : Any]
+                let ref = self.database.child(StringConstants.messages)
                 let childRef = ref.childByAutoId()
                 childRef.updateChildValues(values) { [weak self] error, ref in
                     guard error == nil else {
-                        print("Failed to send Mesaage!!")
+                        print(FirebaseError.FailedToSendMessage)
                         completion(false)
                         return
                     }
                     guard let messageId = childRef.key else { return }
-                    self?.database.child("userMessages").child(senderId).child(recieverId).updateChildValues([messageId: "1"])
-                    self?.database.child("userMessages").child(recieverId).child(senderId).updateChildValues([messageId: "1"])
+                    self?.database.child(StringConstants.userMessages).child(senderId).child(recieverId).updateChildValues([messageId: "1"])
+                    self?.database.child(StringConstants.userMessages).child(recieverId).child(senderId).updateChildValues([messageId: "1"])
+                    self?.database.child(StringConstants.userMessages).child(senderId).child(recieverId).child(StringConstants.recent_Message).setValue(messageId)
+                    self?.database.child(StringConstants.userMessages).child(recieverId).child(senderId).child(StringConstants.recent_Message).setValue(messageId)
                     completion(true)
-                }
-                
-            }
-        }
-    }
-    
-    //MARK: - Fetch messages For ChatController
-    
-    //    func observeUserMessages(completed: @escaping ([Message]) -> ()) {
-    //        guard let uid = FirebaseAuth.Auth.auth().currentUser?.uid else { return }
-    //        var messages = [Message]()
-    //        var messagesDictionary = [String: Message]()
-    //        database.child("latestMessage").child(uid).observe(.childAdded) { snapshot in
-    //            let recieverID = snapshot.key
-    //            print(recieverID)
-    //            self.database.child("latestMessage").child(uid).child(recieverID).observeSingleEvent(of: .value) { snapShot in
-    //                if let dictionary = snapShot.value as? [String: Any] {
-    //                    print(dictionary)
-    //                    let message = Message()
-    //                    message.recieverId = dictionary["recieverId"] as? String
-    //                    message.senderId = dictionary["senderId"] as? String
-    //                    message.text = dictionary["text"] as? String
-    //                    message.timestamp = dictionary["timestamp"] as? Double
-    //                    if let chatPartnerID = message.checkId() {
-    //                        messagesDictionary[chatPartnerID] = message
-    //                        messages = Array(messagesDictionary.values)
-    //                        messages.sort { message1, message2 in
-    //                            return Double(message1.timestamp!) > Double(message2.timestamp!)
-    //                        }
-    //                    }
-    //                    completed(messages)
-    //                }
-    //            }
-    //        }
-    //    }
-    
-    func observeUserMessages(completed: @escaping ([Message]) -> ()) {
-        guard let uid = FirebaseAuth.Auth.auth().currentUser?.uid else { return }
-        var messages = [Message]()
-        var messagesDictionary = [String: Message]()
-        database.child("userMessages").child(uid).observe(.childAdded) { snapShot in
-            let userID = snapShot.key
-            self.database.child("userMessages").child(uid).child(userID).observe(.childAdded) { datasnapShot in
-                let messageId = datasnapShot.key
-                self.database.child("messages").child(messageId).observeSingleEvent(of: .value) { snapShottt in
-                    
-                    if let dictionary = snapShottt.value as? [String: Any] {
-                        let message = Message()
-                        message.recieverId = dictionary["recieverId"] as? String
-                        message.senderId = dictionary["senderId"] as? String
-                        message.text = dictionary["text"] as? String
-                        message.timestamp = dictionary["timestamp"] as? Double
-                        
-                        if let chatPartnerID = message.checkId() {
-                            messagesDictionary[chatPartnerID] = message
-                            messages = Array(messagesDictionary.values)
-                        }
-                        completed(messages)
-                    }
                 }
             }
         }
@@ -280,19 +224,81 @@ class FirebaseManager {
     func observePerticularMessage(for userWithID: String, completion: @escaping ([Message]) -> Void) {
         var messages = [Message]()
         guard let uid = FirebaseAuth.Auth.auth().currentUser?.uid else { return }
-        database.child("userMessages").child(uid).child(userWithID).observe(.childAdded) { [weak self] snapShot in
+        database.child(StringConstants.userMessages).child(uid).child(userWithID).observe(.childAdded) { [weak self] snapShot in
             let messageID = snapShot.key
-            self?.database.child("messages").child(messageID).observeSingleEvent(of: .value) { dataSnapshot in
+            self?.database.child(StringConstants.messages).child(messageID).observeSingleEvent(of: .value) { dataSnapshot in
                 guard let dictionary = dataSnapshot.value as? [String: Any] else { return }
-                let message = Message()
-                message.recieverId = dictionary["recieverId"] as? String
-                message.senderId = dictionary["senderId"] as? String
-                message.text = dictionary["text"] as? String
-                message.timestamp = dictionary["timestamp"] as? Double
-                message.imageURL = dictionary["imageURL"] as? String
+                let message = Message(dictionary: dictionary)
                 messages.append(message)
-                
                 completion(messages)
+            }
+        }
+    }
+    
+    //MARK: - Status ViewController Functions
+    
+    func uploadStatusImage(image: UIImage, completion: @escaping (Bool) -> Void) {
+        let imageName = NSUUID().uuidString
+        guard let uid = FirebaseAuth.Auth.auth().currentUser?.uid else { return }
+        guard let imagedata = image.jpegData(compressionQuality: 0.2) else {
+            print(FirebaseError.ErrorGettingImageData)
+            return
+        }
+        
+        storage.child("status").child(imageName).putData(imagedata, metadata: nil) { storageMetadata, error in
+            guard error == nil else {
+                print(FirebaseError.ErrorUploadingImageURL)
+                completion(false)
+                return
+            }
+            self.storage.child("status").child(imageName).downloadURL { url, error in
+                guard let imageURL = url?.absoluteString, error == nil else {
+                    print(FirebaseError.ErrorDownloadingImageURL)
+                    completion(false)
+                    return
+                }
+                let values = ["imageURL": imageURL] as [String : Any]
+                self.database.child("latestStatus").child(uid).updateChildValues(values)
+                self.database.child("status").child(uid).childByAutoId().updateChildValues(values) { error, ref in
+                    guard error == nil else {
+                        print("Error Storing data in database")
+                        return
+                    }
+                    completion(true)
+                }
+            }
+        }
+    }
+    
+    func fetchUserStatus(user: String, completion: @escaping ([String]) -> Void) {
+        var imageArray = [String]()
+        database.child("status").observeSingleEvent(of: .childAdded) { snapShot in
+            self.database.child("status").child(user).observe(.childAdded) { snapshot in
+                self.database.child("status").child(user).child(snapshot.key).observe(.value) { dataSnapShot in
+                    if let dictionary = dataSnapShot.value as? [String: Any] {
+                        guard let imageURL = dictionary["imageURL"] as? String else { return }
+                        imageArray.append(imageURL)
+                        completion(imageArray)
+                    }
+                }
+            }
+        }
+    }
+    
+    func fetchLatestUserStatus(completion: @escaping ([Status]) -> Void) {
+        var statusArray = [Status]()
+        database.child("latestStatus").observe(.childAdded) { snapShot in
+            let userID = snapShot.key
+            self.database.child("latestStatus").child(userID).observe(.value) { snapshot in
+                if let dictionary = snapshot.value as? [String: Any] {
+                    guard let imageURL = dictionary["imageURL"] as? String else { return }
+                    FirebaseManager.shared.fetchPerticularUser(id: userID) { userDictionary in
+                        let user = Users(dictionary: userDictionary)
+                        let status = Status(user: user, imageURL: imageURL)
+                        statusArray.append(status)
+                        completion(statusArray)
+                    }
+                }
             }
         }
     }

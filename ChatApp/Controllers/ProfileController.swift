@@ -100,17 +100,12 @@ class ProfileController: UIViewController {
         guard let uid = FirebaseAuth.Auth.auth().currentUser?.uid else {
             return
         }
-        FirebaseManager.shared.fetchCurrentUser(with: uid) { result in
-            switch result {
-            case .success(let profile):
-                self.nameField.text = profile["name"] as? String
-                self.emailField.text = profile["email"] as? String
-                guard let urlString = profile["profilePhotoURL"] as? String else { return }
-                let URL = NSURL(string: urlString)
-                self.profileImage.sd_setImage(with: URL as URL?, completed: nil)
-            case .failure(let error):
-                print("Failed to fetch User from Database!! \(error)")
-            }
+        FirebaseManager.shared.fetchPerticularUser(id: uid) { dictionary in
+            self.nameField.text = dictionary["name"] as? String
+            self.emailField.text = dictionary["email"] as? String
+            guard let urlString = dictionary["profilePhotoURL"] as? String else { return }
+            let URL = NSURL(string: urlString)
+            self.profileImage.sd_setImage(with: URL as URL?, completed: nil)
         }
     }
     

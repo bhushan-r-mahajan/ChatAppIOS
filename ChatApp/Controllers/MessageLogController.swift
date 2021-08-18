@@ -14,53 +14,9 @@ class MessageLogController: UITableViewController, UITextFieldDelegate {
     
     // MARK: - Properties
     
-    let sendButton: UIButton = {
-        let button = UIButton(type: .system)
-        button.setImage(UIImage(systemName: "paperplane.fill", withConfiguration: UIImage.SymbolConfiguration(weight: .bold))?.withTintColor(.white, renderingMode: .alwaysOriginal), for: .normal)
-        button.backgroundColor = #colorLiteral(red: 1, green: 0.1294117647, blue: 0.1294117647, alpha: 1).withAlphaComponent(1)
-        button.layer.cornerRadius = 25
-        button.addTarget(self, action: #selector(handleSendingOfMessage), for: .touchUpInside)
-        return button
-    }()
-    
-    let inputTextField: UITextField = {
-        let inputField = UITextField()
-        inputField.backgroundColor = .clear
-        inputField.font = UIFont.systemFont(ofSize: 19)
-        inputField.attributedPlaceholder = NSAttributedString(string: "Enter Message", attributes: [NSAttributedString.Key.foregroundColor: UIColor.white])
-        inputField.textColor = .white
-        inputField.layer.masksToBounds = true
-        inputField.layer.cornerRadius = 20
-        inputField.addPadding(.left(8))
-        return inputField
-    }()
-    
-    let sendImageButton: UIButton = {
-        let button = UIButton(type: .system)
-        button.setImage(UIImage(systemName: "paperclip", withConfiguration: UIImage.SymbolConfiguration(weight: .bold))?.withTintColor(.white, renderingMode: .alwaysOriginal), for: .normal)
-        button.addTarget(self, action: #selector(sendImageButtonTpped), for: .touchUpInside)
-        return button
-    }()
-    
-    lazy var textFieldContainerView: UIView = {
-        let tv = UIView()
-        tv.addSubview(inputTextField)
-        tv.addSubview(sendImageButton)
-        tv.layer.cornerRadius = 20
-        tv.backgroundColor = .darkGray
-        sendImageButton.anchor(top: tv.topAnchor, paddingTop: 10, right: tv.rightAnchor, paddingRight: 5, width: 30, height: 30)
-        inputTextField.anchor(top: tv.topAnchor, left: tv.leftAnchor, right: sendImageButton.leftAnchor, bottom: tv.bottomAnchor)
-        return tv
-    }()
-    
-    lazy var inputContainerView: UIView = {
-        let containerView = UIView()
-        containerView.frame = CGRect(x: 0, y: 0, width: self.view.frame.width, height: 80)
-        containerView.backgroundColor = #colorLiteral(red: 0.2, green: 0.2, blue: 0.2, alpha: 1)
-        containerView.addSubview(sendButton)
-        containerView.addSubview(textFieldContainerView)
-        sendButton.anchor(top: containerView.topAnchor, right: containerView.rightAnchor, width: 50, height: 50)
-        textFieldContainerView.anchor(top: containerView.topAnchor, left: containerView.leftAnchor, paddingLeft: 10, right: sendButton.leftAnchor, paddingRight: 8, height: 50)
+    lazy var inputContainerView: InputContainerView = {
+        let containerView = InputContainerView(frame: CGRect(x: 0, y: 0, width: self.view.frame.width, height: 80))
+        containerView.messageLogController = self
         return containerView
     }()
     
@@ -90,7 +46,7 @@ class MessageLogController: UITableViewController, UITextFieldDelegate {
         super.viewDidLoad()
         configureViewComponents()
         setupKeyboardObserver()
-        inputTextField.delegate = self
+        inputContainerView.inputTextField.delegate = self
     }
     
     override func viewDidLayoutSubviews() {
@@ -124,7 +80,6 @@ class MessageLogController: UITableViewController, UITextFieldDelegate {
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-        
     }
     
     // MARK: - Configure Functions
@@ -158,6 +113,15 @@ class MessageLogController: UITableViewController, UITextFieldDelegate {
         NotificationCenter.default.addObserver(self, selector: #selector(observeKeyboard), name: UIResponder.keyboardDidShowNotification, object: nil)
     }
     
+    func timestamp() -> String? {
+        let now = Date()
+        let formatter = DateFormatter()
+        formatter.dateFormat = "hh:mm a dd/MM"
+        return formatter.string(from: now)
+    }
+    
+    //MARK: - Handler Functions
+    
     @objc func observeKeyboard() {
         let count = messages.count
         if count > 2 {
@@ -166,24 +130,18 @@ class MessageLogController: UITableViewController, UITextFieldDelegate {
         }
     }
     
-    //MARK: - Handler Functions
-    
     @objc func handleSendingOfMessage() {
-        guard let message = inputTextField.text else { return }
-        guard let uid = user!.id else { return }
-        guard let currentUserUid = FirebaseAuth.Auth.auth().currentUser?.uid else { return }
-        guard let timestamp = NSDate().timeIntervalSince1970 as? Double else { return }
-        FirebaseManager.shared.sendMessages(message: message, recieverId: uid, senderId: currentUserUid, timestamp: timestamp) { [weak self] success in
+        guard let message = inputContainerView.inputTextField.text, let recieverID = user!.id, let currentUserUid = FirebaseAuth.Auth.auth().currentUser?.uid, let timestamp =  timestamp(), let recieverName = user?.name, let profileURL = user?.profilePhotoURL else { return }
+        
+        FirebaseManager.shared.sendMessages(recieverName: recieverName, recieverProfilePhoto: profileURL, message: message, recieverId: recieverID, senderId: currentUserUid, timestamp: timestamp) { [weak self] success in
             if success {
-                print("Sent SuccessFully!!")
-                self?.inputTextField.text = nil
+                self?.inputContainerView.inputTextField.text = nil
             }
         }
     }
     
     @objc func sendImageButtonTpped() {
         let vc = UIImagePickerController()
-        //vc.sourceType = .photoLibrary
         vc.sourceType = .photoLibrary
         vc.delegate = self
         vc.allowsEditing = true
@@ -219,28 +177,23 @@ extension MessageLogController: UIImagePickerControllerDelegate, UINavigationCon
     
     func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
         
-        guard let uid = user!.id else { return }
-        guard let currentUserUid = FirebaseAuth.Auth.auth().currentUser?.uid else { return }
-        guard let timestamp = NSDate().timeIntervalSince1970 as? Double else { return }
+        guard let recieverID = user!.id, let currentUserUid = FirebaseAuth.Auth.auth().currentUser?.uid, let timestamp = timestamp(), let recieverName = user?.name, let profileURL = user?.profilePhotoURL else { return }
         
         if let video = info[UIImagePickerController.InfoKey(rawValue: "UIImagePickerControllerMediaURL")] as? NSURL {
             let videoURL = video.filePathURL as NSURL?
             guard let thumbnailImage = self.thumbnailImageForFile(fileURL: videoURL!) else { return }
             FirebaseManager.shared.getThumbnailImageURl(image: thumbnailImage) { url in
                 let imageURl = url
-                FirebaseManager.shared.sendVideosInChat(videoURL: videoURL! as URL, imageURL: imageURl, recieverId: uid, senderId: currentUserUid, timestamp: timestamp) { success in
+                FirebaseManager.shared.sendVideosInChat(videoURL: videoURL! as URL, imageURL: imageURl, recieverId: recieverID, senderId: currentUserUid, timestamp: timestamp) { success in
                     if success {
                         print("Video message sent!!")
                     }
                 }
             }
-          
         } else {
             if let image = info[UIImagePickerController.InfoKey(rawValue: "UIImagePickerControllerEditedImage")] as? UIImage {
-                FirebaseManager.shared.sendImagesInChat(image: image, recieverId: uid, senderId: currentUserUid, timestamp: timestamp) { success in
-                    if success {
-                        print("Image message sent!!")
-                    }
+                FirebaseManager.shared.sendImagesInChat(recieverName: recieverName, recieverProfilePhoto: profileURL, image: image, recieverId: recieverID, senderId: currentUserUid, timestamp: timestamp) { success in
+                    if success {}
                 }
             }
         }
